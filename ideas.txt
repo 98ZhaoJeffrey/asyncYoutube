@@ -14,7 +14,6 @@
 databases:
 
 table 1: Rooms
-id: integer
 code: unqiue string for the room | primary key
 users: relates to the users table(many users to one room relationship)
 host_id: id of the host_id
@@ -29,8 +28,14 @@ room code = code of the room they are in
 
 redis:
 video queue: json with video id and the link to the playlist/video
-key: video id
-value: json
+key: room id(same as rooms)
+value: json(every video)
 
 use python-socketio
 idea: https://dribbble.com/shots/14592577--Exploration-Hero-Section
+
+
+route 1: main page
+
+route 2: actual room with videos
+
