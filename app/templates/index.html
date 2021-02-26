@@ -1,5 +1,111 @@
 {%extends 'base.html' %}
 
+{% block head %}
+
+{% endblock %}
+
+
+
 {%block content %}
-    Hello Flask
+
+<div class="flex flex-row">
+    <div class="flex text-center">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Logo_of_YouTube_%282015-2017%29.svg/1280px-Logo_of_YouTube_%282015-2017%29.svg.png" alt="Youtube"
+        class="h-1/2 w-1/2">
+    </div>
+    <div class="flex flex-col w-1/2 space-y-16 justify-items-center">
+        <div class="text-center text-5xl font-extrabold p-8">
+            <span class=" flex-shrink bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500 font-black text-6xl md:text-8xl">SyncTube</span>
+        </div>
+        <div class="flex flex-row w-full items-center justify-evenly">
+            <button class="rounded-lg bg-purple-600 text-white font-bold focus:outline-none py-2 px-4 w-1/3 h-16 hover:bg-purple-800" value="make" onclick="makeModal()">
+                Make Room
+            </button>
+            <button class="rounded-lg bg-transparent border-2 border-red-700 text-white font-bold py-2 px-4 focus:outline-none w-1/3 h-16 hover:bg-red-700" onclick="joinModal()">
+                Join Room
+            </button>
+            
+        </div>
+        <div class="text-center mt-12">
+            <a href="https://twitter.com" target="_blank"><span class="text-blue-400 hover:text-blue-400">About this website</span></a>
+        </div>
+    </div>
+
+</div>  
+
+<div class="bg-blue-600 w-1/2 rounded-lg p-8" id="Join">
+    <form id="JoinForm">
+        <div>
+            <label for="code">Enter the room code</label>
+            <br>
+            <input type="text" placeholder="code" name="code" required></input>
+        </div>
+        <div>
+            <label for="name">Enter a name</label>
+            <br>
+            <input type="text" placeholder="name" name="name" required></input>
+        </div>
+        <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/3 h-16 hover:bg-purple-800">
+            Join room
+        </button>
+    </form>
+
+</div>
+<div class="bg-red-600 w-1/2 rounded-lg p-8" id="Make">
+    <form id="MakeForm">
+        <div>
+            <label for="name">Enter a name</label>
+            <br>
+            <input type="text" placeholder="name" name="name" required></input>
+        </div>
+        <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/3 h-16 hover:bg-purple-800">
+            Make room
+        </button>
+    </form>  
+</div>
+
+<script>
+    const joinModal = () => {
+        const modal = document.getElementById('Join')
+        modal.hidden = !(modal.hidden)
+    }
+
+    const makeModal = () => {
+        const modal = document.getElementById('Make')
+        modal.hidden = !(modal.hidden)
+    }
+
+    const JoinForm = document.getElementById('JoinForm')
+    JoinForm.addEventListener('submit', (e) => {
+        e.preventDefault()
+        let data = new FormData(document.getElementById('JoinForm'))
+        data.append('join','')
+        fetch(`${window.origin}/`, {
+            method: "POST",
+            body: data
+        })  
+        .then(response => response.json())
+        .then(data => {
+                console.log(data)
+                window.location = '/room'
+            })
+        .catch(error => console.log((JSON.parse(error)).error));
+    }) 
+
+    const MakeForm = document.getElementById('MakeForm')
+    MakeForm.addEventListener('submit', (e) => {
+        e.preventDefault()
+        let data = new FormData(document.getElementById('MakeForm'))
+        data.append('make','')
+        fetch(`${window.origin}/`, {
+            method: "POST",
+            body: data
+        })  
+        .then(response => {
+                response.json()
+                window.location = '/room'
+            })
+        .then(data => console.log(data));
+    }) 
+</script>
 {% endblock %}
