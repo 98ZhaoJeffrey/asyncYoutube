@@ -1,57 +1,60 @@
 {% extends 'base.html' %}
 
+
 {% block content %}
 
 
-<div class="flex flex-row h-4/6 justify-evenly">
-    <!-- 1. The <iframe> (and video player) will replace this <div> tag. -->
-    <div id="player" style="margin: auto;" class="flex-shrink"></div>
-    
-    <div style="background-color:#2b2b28" class="w-1/4 container mx-auto rounded-lg" >
-        <span class="text-white text-2xl">Chat here</span>
+<div class="flex flex-row justify-around">
+  <div class="h-1/2 w-3/5 flex flex-col justify-around">
+
+      <div class="py-12">
+        <input type="text" placeholder="YouTube Video Link" name="video" class="rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-4/6 h-12 p-3" required></input>
+        <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/16 h-12 p-3 hover:bg-purple-800">
+          Request a Video
+        </button>
+      </div>
+
+      <div class="relative">
+        <iframe id="player" type="text/html" width="960" height="570" 
+          src="https://www.youtube.com/embed/wLXyb_wJPc4"
+          frameborder="0">
+        </iframe>
+      </div>
+    </div>     
+
+    <div style="background-color:#2b2b28" class="w-1/4 rounded-lg">
+        <div class="flex flex-col justify-evenly">
+          <span class="text-white text-2xl">Chat here</span>
+        </div>
+        <div id="chat" style="background-color:grey" class="w-100 h-2/4 p-2 rounded-lg overflow-y-auto">
+        </div>
+        
+        <div class="flex flex-row justify-evenly">
+            <textarea placeholder="Please be nice :)" id="messageInput" name="message" class="resize-none rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-9/12 h-12 p-2"></textarea>
+            <button id="messageButton" class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/6 h-12 p-2 hover:bg-purple-800">
+              Send
+            </button>
+        </div>
     </div>
 </div>
 
-<script>
-  // 2. This code loads the IFrame Player API code asynchronously.
-  var tag = document.createElement('script');
+<div class="p-12" id="controls">
+  <div class="flex flex-row justify-evenly">
+    <!-- these controls are only for the host user-->
+    <span class="text-white text-2xl">Play</span>
+    <!--only draggable if you are host-->
+    <span class="text-white text-2xl">Timeline</span>
+    <span class="text-white text-2xl">Skip</span>
 
-  tag.src = "https://www.youtube.com/iframe_api";
-  var firstScriptTag = document.getElementsByTagName('script')[0];
-  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    <span class="text-white text-2xl">Sound</span>
+    <span class="text-white text-2xl">Full Screen</span>
+  </div>
+</div>
 
-  // 3. This function creates an <iframe> (and YouTube player)
-  //    after the API code downloads.
-  var player;
-  function onYouTubeIframeAPIReady() {
-    player = new YT.Player('player', {
-      height: '487.5',
-      width: '800',
-      videoId: 'M7lc1UVf-VE',
-      events: {
-        //'onReady': onPlayerReady,
-        'onStateChange': onPlayerStateChange
-      }
-    });
-  }
+<p id="username" class="visibility: hidden">{{context.user.username}}</p>
 
-  // 4. The API will call this function when the video player is ready.
-  function onPlayerReady(event) {
-    event.target.playVideo();
-  }
+<script defer type="text/javascript" src="{{ url_for('static', filename='js/room.js') }}">
 
-  // 5. The API calls this function when the player's state changes.
-  //    The function indicates that when playing a video (state=1),
-  //    the player should play for six seconds and then stop.
-  var done = false;
-  function onPlayerStateChange(event) {
-    if (event.data == YT.PlayerState.PLAYING && !done) {
-      setTimeout(stopVideo, 6000);
-      done = true;
-    }
-  }
-  function stopVideo() {
-    player.stopVideo();
-  }
 </script>
+
 {% endblock %}

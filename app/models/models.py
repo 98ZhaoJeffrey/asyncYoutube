@@ -6,9 +6,7 @@ db = SQLAlchemy()
 class User(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(64), nullable=False)
-
     room_code = db.Column(db.String(36), db.ForeignKey('room.code'))
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.id = str(uuid.uuid4())
