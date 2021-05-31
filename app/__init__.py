@@ -5,7 +5,7 @@ from os import getenv
 from dotenv import load_dotenv, find_dotenv
 from flask_migrate import Migrate
 from flask_socketio import SocketIO, join_room, leave_room, emit
-
+import redis, requests 
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
@@ -18,16 +18,19 @@ db.init_app(app)
 socketio = SocketIO(app)
 migrate = Migrate(app, db)
 
+queue = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        #can just use axios and js to redirect/handle json
+
         data = request.form
         if 'make' in data:
             #create a room first, then make the user the host
             room = Room()
             username = data['name']
+            link = data['video']
             user = User(name=username, room_code=room.code)
             room.host = user.id
 
@@ -35,6 +38,11 @@ def index():
             db.session.add(room)
             db.session.commit()
 
+            if len(link) > 43:
+                #remove the list parameter
+                link = link.split('&list')[0]
+            request.get(link)
+            #queue.lpush(room.code, 'test')
             session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
             return {'success':'Room is sucessfully created. You will be redirected in a moment.'}, 201
         
@@ -96,17 +104,27 @@ def about():
 
 @socketio.on('connectUser')
 def connect(data):
-    print(data + " has connected")
-    emit('joinChat', data, broadcast=True, include_self=False)
+    print(data)
+    room = data['room']
+    join_room(room)
+    emit('joinChat', data['username'], broadcast=True, include_self=False, to=room)
 
-@socketio.on('disconnect')
-def test_disconnect():
-    print('Client disconnected')
+@socketio.on('disconnectUser')
+def disconnect(data):
+    print(f'Client disconnected {data}')
+    room = data['room']
+    leave_room(room)
+    emit('leaveChat', data['username'], broadcast=True, to=room)
 
 @socketio.on('sendMessage')
-def message(message):
-    print(message)
-    emit('message', message, broadcast=True, include_self=False)
+def message(data):
+    print(data)
+    emit('message', data['message'], broadcast=True, include_self=False, to=data['room'])
+
+@socketio.on('addVideo')
+def queueVideo(data):
+    print(data['link'])
+    print(data['room'])
 
 """
 @socketio.event

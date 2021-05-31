@@ -8,8 +8,8 @@
   <div class="h-1/2 w-3/5 flex flex-col justify-around">
 
       <div class="py-12">
-        <input type="text" placeholder="YouTube Video Link" name="video" class="rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-4/6 h-12 p-3" required></input>
-        <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/16 h-12 p-3 hover:bg-purple-800">
+        <input id="videoInput" type="text" placeholder="YouTube Video Link" name="video" class="rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-4/6 h-12 p-3" required></input>
+        <button id="videoButton" class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/16 h-12 p-3 hover:bg-purple-800">
           Request a Video
         </button>
       </div>
@@ -52,8 +52,9 @@
 </div>
 
 <p id="username" class="visibility: hidden">{{context.user.username}}</p>
+<p id="room" class="visibility: hidden">{{context.user.room}}</p>
 
-<script defer type="text/javascript" src="{{ url_for('static', filename='js/room.js') }}">
+<script defer type="text/javascript" src="{{ url_for('static', filename='js/roomSocketio.js') }}">
 
 </script>
 

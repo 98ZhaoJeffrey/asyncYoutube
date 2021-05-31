@@ -32,7 +32,7 @@ MakeForm.addEventListener('submit', (e) => {
     e.preventDefault()
     let data = new FormData(document.getElementById('MakeForm'))
     data.append('make','')
-    fetch(`${window.origin}/join`, {
+    fetch(`${window.origin}/`, {
         method: "POST",
         body: data
     })  
