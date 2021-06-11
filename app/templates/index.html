@@ -7,60 +7,51 @@
 
 
 {%block content %}
-<div class= "flex flex-col md:flex-row justify-center ">
-    <div class="flex flex-col w-max h-1/4 md: w-1/2 h-1/2">
-        <div class="flex justify-center">
-            <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Youtube" class="w-5/6 md:h-1/2 w-9/12">
-        </div>        
-        <div class="flex justify-center text-5xl font-extrabold">
-            <span class="flex-shrink bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500 p-12 font-black text-6xl md:text-8xl">SyncTube</span>
+<div class="h-full grid grid-cols-1 md:grid-cols-2">
+    
+    <div class="flex flex-col justify-center items-center">
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Youtube" class="h-2/3 w-5/6 ">
+
+        <div class="text-center">
+            <span class="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500 p-12 font-black text-6xl lg:text-8xl">SyncTube</span>
         </div>
-    </div>  
+    </div>
 
-    <div class="flex flex-col w-1/3 space-y-16 justify-center">
-
-        <div class="flex flex-row w-full items-center justify-evenly">
-            <button class="rounded-lg bg-purple-600 text-white font-bold focus:outline-none py-2 px-4 w-1/3 h-16 hover:bg-purple-800" value="make" onclick="makeModal()">
-                Make Room
-            </button>
-            <button class="rounded-lg bg-transparent border-2 border-red-700 text-white font-bold py-2 px-4 focus:outline-none w-1/3 h-16 hover:bg-red-700" onclick="joinModal()">
+    <div class="flex flex-col justify-around items-center h-full">
+        <div class="flex flex-row w-full h-1/5 items-center justify-evenly">
+            <button class="rounded-lg bg-purple-600 text-white font-bold focus:outline-none py-2 px-4 w-1/3 h-16 hover:bg-purple-800" value="make" onclick="joinModal()">
                 Join Room
             </button>
+            <button class="rounded-lg bg-transparent border-2 border-red-700 text-white font-bold py-2 px-4 focus:outline-none w-1/3 h-16 hover:bg-red-700" onclick="makeModal()">
+                Make Room
+            </button>
         </div>
 
-        <div class="flex flex-col">
-            <div class="h-1/2 rounded-lg p-8" id="Join">
-                <form id="JoinForm">
-                    <div class="flex flex-row">
-                        <div>
-                            <input type="text" placeholder="Enter the room code" name="code" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
-                            <br/>
-                            <input type="text" placeholder="Enter a name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
-                        </div>
-                        <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/3 h-16 hover:bg-purple-800">
-                            Join room
-                        </button>
-                    </div>
-                </form>
+        <div class="h-1/4 mb-8 w-5/6 lg:w-7/12" id="Join">
+            <form id="JoinForm">
+                <div class="flex items-center flex-col gap-y-4 border-2 border-purple-600 p-8 rounded-lg">
+                    <input type="text" placeholder="Enter the room code" name="code" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
+                    <input type="text" placeholder="Enter a name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
+                    <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-full h-16 hover:bg-purple-800">
+                        Join room
+                    </button>
+                </div>
+            </form>
+        </div>
 
-            </div>
-            <div class="h-1/2 rounded-lg p-8" id="Make">
-                <form id="MakeForm">
-                    <div class="flex flex-row">
-                        <div>
-                            <input type="text" placeholder="Enter a name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
-                            <br/>
-                            <input type="text" placeholder="Enter Youtube Video Link" name="video" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
-                        </div>
-                        <button class="rounded-lg bg-transparent border-2 border-red-700 text-white focus:outline-none w-1/3 h-16 hover:bg-red-700">
-                            Make room
-                        </button>
-                    </div>
-                </form>  
-            </div>
-            <div class="text-center mt-12">
-                <a href="https://twitter.com" target="_blank"><span class="text-blue-400 hover:text-blue-400">About this website</span></a>
-            </div>
+        <div class="h-1/4 my-8 w-5/6 lg:w-7/12" id="Make">
+            <form id="MakeForm">
+                <div class="flex items-center flex-col gap-y-4 border-2 border-red-500 p-8 rounded-lg">
+                    <input type="text" placeholder="Enter a name" name="name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
+                    <input type="text" placeholder="Enter Youtube Video Link" name="video" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
+                    <button class="rounded-lg bg-transparent border-2 border-red-700 text-white focus:outline-none w-full h-16 hover:bg-red-700">
+                        Make room
+                    </button>
+                </div>
+            </form>  
+        </div>
+        <div class="flex text-center items-center h-1/8">
+            <a href="https://twitter.com" target="_blank"><span class="text-blue-400 hover:text-blue-400">About this website</span></a>
         </div>
     </div>
 </div>

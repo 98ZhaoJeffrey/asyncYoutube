@@ -126,23 +126,6 @@ def queueVideo(data):
     print(data['link'])
     print(data['room'])
 
-"""
-@socketio.event
-def join(data):
-    username = data['username']
-    room = data['room']
-    print(f"{username} has joined room: {room}")
-    join_room(room)
-    send(username + ' has joined room.', room=room)
-    #emit(username + ' has entered the room.', room=room)
-
-@socketio.event
-def leave(data):
-    username = data['username']
-    room = data['room']
-    leave_room(room)
-    #emit(username + ' has left the room.', room=room)
-"""
 #next video method to run the next video(used run when finish or skipped)
 
 #add video method to append a video to the list
