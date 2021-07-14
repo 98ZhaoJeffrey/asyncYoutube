@@ -7,6 +7,7 @@ class User(db.Model):
     id = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(64), nullable=False)
     room_code = db.Column(db.String(36), db.ForeignKey('room.code'))
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.id = str(uuid.uuid4())
@@ -21,7 +22,6 @@ class Room(db.Model):
     #Get every user that is in the room for users, but only 1 person can be the host of the room
     users = db.relationship('User', backref='room')
     host = db.Column(db.String(64))
-
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

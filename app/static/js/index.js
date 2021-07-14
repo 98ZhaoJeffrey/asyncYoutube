@@ -1,12 +1,6 @@
-const joinModal = () => {
-    const modal = document.getElementById('Join')
-    modal.hidden = !(modal.hidden)
-}
+const ErrorClass = "z-10 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+const SuccessClass = "z-10 bg-green-100 border border-red-400 text-green-700 px-4 py-3 rounded relative"
 
-const makeModal = () => {
-    const modal = document.getElementById('Make')
-    modal.hidden = !(modal.hidden)
-}
 
 const JoinForm = document.getElementById('JoinForm')
 JoinForm.addEventListener('submit', (e) => {
@@ -18,13 +12,13 @@ JoinForm.addEventListener('submit', (e) => {
         body: data
     })  
     .then(response => {
-        return response.json()
-    })
-    .then(data => {
-            console.log(data)
+        if(response.status !== 200){
+            console.log(response.error)
+        }else{
             window.location ='room'
-        })
-    .catch(error => console.log((JSON.parse(error)).error));
+        }           
+    })
+    .catch(error => console.error(error));
 }) 
 
 const MakeForm = document.getElementById('MakeForm')
@@ -37,11 +31,20 @@ MakeForm.addEventListener('submit', (e) => {
         body: data
     })  
     .then(response => {
-            return response.json
-            //window.location = '/room'
+            if(response.status !== 201){
+                console.log(data.json()) 
+            }
+            else{
+                window.location ='room'
+            }
         })
-    .then(data => {
-        console.log(data)
-        window.location ='room'
-    });
+    .catch(error => console.error(error));
 }) 
+
+const closeAlert = (event) => {
+    const alert = event.target.parentElement.parentElement
+    console.log(alert)
+    if(alert){
+        alert.remove()
+    }
+}

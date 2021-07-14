@@ -4,61 +4,59 @@
 {% block content %}
 
 
-<div class="flex flex-row justify-around">
-  <div class="h-1/2 w-3/5 flex flex-col justify-around">
-
+<div class="h-full w-full grid grid-cols-10 grid-rows-1 gap-x-10 ">
+  <div class="col-span-7">
       <div class="py-12">
         <input id="videoInput" type="text" placeholder="YouTube Video Link" name="video" class="rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-4/6 h-12 p-3" required></input>
         <button id="videoButton" class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/16 h-12 p-3 hover:bg-purple-800">
           Request a Video
         </button>
       </div>
+      <div id="player"></div>
 
-      <div class="relative">
-        <iframe id="player" type="text/html" width="960" height="570" 
-          src="https://www.youtube.com/embed/wLXyb_wJPc4"
-          frameborder="0">
-        </iframe>
+      <div class="p-12" id="controls">
+        <div class="flex flex-row justify-evenly">
+          <!-- these controls are only for the host user-->
+         
+          
+          <label for="volume" class="text-white text-2xl">Volume</label>
+          <input type="range" id="volume" name="volume" min="0" max="100" value="50">
+          
+          <button class="rounded-lg bg-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="fullscreenButton">Full Screen</button>
+        </div>
+
+        <!--only displayed if you are host-->
+        <div class="flex flex-row justify-evenly items-center">
+          <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="playButton">Play</button>
+          <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Skip</button>
+          <input id="timeline" type="range" min=0 max=1000 value=0 onChange="scrubVideo()" class="w-5/6">
+        </div>
+
       </div>
     </div>     
 
-    <div style="background-color:#2b2b28" class="w-1/4 rounded-lg">
-        <div class="flex flex-col justify-evenly">
-          <span class="text-white text-2xl">Chat here</span>
-        </div>
-        <div id="chat" style="background-color:grey" class="w-100 h-2/4 p-2 rounded-lg overflow-y-auto">
+    <div style="background-color:#2b2b28" class="flex flex-col justify-around col-span-3 w-full h-full">
+        <div style="height:5vh">
+          <span class="text-white text-2xl text-center">Room Chat</span>
         </div>
         
-        <div class="flex flex-row justify-evenly">
-            <textarea placeholder="Please be nice :)" id="messageInput" name="message" class="resize-none rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-9/12 h-12 p-2"></textarea>
-            <button id="messageButton" class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/6 h-12 p-2 hover:bg-purple-800">
+        <div id="chat" style="height:90vh" class="flex flex-col w-full overflow-y-auto border-2 border-gray-700">
+        </div>
+        
+        <div style="height:5vh" class="flex flex-row justify-evenly">
+            <textarea placeholder="Please be nice :)" id="messageInput" name="message" class="resize-none rounded-md focus:outline-none focus:ring focus:border-purple-800 w-3/4 h-12 p-2"></textarea>
+            <button id="messageButton" class="rounded-md bg-purple-600 text-white focus:outline-none w-1/5 h-12 p-2 hover:bg-purple-800">
               Send
             </button>
         </div>
     </div>
 </div>
 
-<div class="p-12" id="controls">
-  <div class="flex flex-row justify-evenly">
-    <!-- these controls are only for the host user-->
 
-    <!--  turns to pause onclick -->
-    <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Play</button>
-    <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Skip</button>
-
-    <!--only draggable if you are host-->
-    <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Timeline</button>
-    
-    <button class="rounded-lg bg-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Sound</button>
-    <button class="rounded-lg bg-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Full Screen</button>
-  </div>
-</div>
 
 <p id="username" class="visibility: hidden">{{context.user.username}}</p>
 <p id="room" class="visibility: hidden">{{context.user.room}}</p>
 
-<script defer type="text/javascript" src="{{ url_for('static', filename='js/roomSocketio.js') }}">
-
-</script>
+<script defer type="text/javascript" src="{{ url_for('static', filename='js/roomSocketio.js') }}"></script>
 
 {% endblock %}

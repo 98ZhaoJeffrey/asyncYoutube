@@ -5,7 +5,7 @@ from os import getenv
 from dotenv import load_dotenv, find_dotenv
 from flask_migrate import Migrate
 from flask_socketio import SocketIO, join_room, leave_room, emit
-import redis, requests 
+import redis, requests, time
 load_dotenv(find_dotenv())
 
 app = Flask(__name__)
@@ -18,8 +18,7 @@ db.init_app(app)
 socketio = SocketIO(app)
 migrate = Migrate(app, db)
 
-queue = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
-
+redisClient = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -28,6 +27,8 @@ def index():
         data = request.form
         if 'make' in data:
             #create a room first, then make the user the host
+            start = time.time()
+
             room = Room()
             username = data['name']
             link = data['video']
@@ -41,11 +42,25 @@ def index():
             if len(link) > 43:
                 #remove the list parameter
                 link = link.split('&list')[0]
-            request.get(link)
-            #queue.lpush(room.code, 'test')
-            session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
-            return {'success':'Room is sucessfully created. You will be redirected in a moment.'}, 201
-        
+
+            #get the video id
+            id = link.split("=")[1]
+
+            serverResponse = requests.get(f"http://img.youtube.com/vi/{id}/mqdefault.jpg")
+            print(time.time()-start)
+
+            try:
+                #throws error if response is not OK
+                serverResponse.raise_for_status()
+                           
+                #redisClient.lpush(room.code, link)
+                session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
+                return ({"success":"Room is sucessfully created. You will be redirected in a moment."}, 201)
+
+            except requests.exceptions.HTTPError:
+                print("video not found")
+                return ({"error":"This video does not exist"}, 404)
+
         #join a room
         elif 'join' in data:
             #return json for fetch
@@ -59,11 +74,10 @@ def index():
                 db.session.commit()
                 session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
                 
-                return {'success':'You will be redirected to the room. Please wait a moment.'}, 201
+                return ({'success':'You will be redirected to the room. Please wait a moment.'}, 200)
             else:
-                return {'error': 'The room with the code you provided does not exist. Check if it is correct.'}, 404
+                return ({'error': 'The room with the code you provided does not exist. Check if it is correct.'}, 404)
     return render_template('index.html')
-
 
 @app.route('/join/<roomcode>', methods=['GET', 'POST'])
 def join(roomcode):
@@ -123,12 +137,20 @@ def message(data):
 
 @socketio.on('addVideo')
 def queueVideo(data):
-    print(data['link'])
-    print(data['room'])
+    print(data)
+    #use client.lpush(roomcode, link) to append a link
+    #use client.rpop(roomcode) to get the next link in queue
 
-#next video method to run the next video(used run when finish or skipped)
+#next video method to run the next video(used when finish or skipped)
 
-#add video method to append a video to the list
 
 #pause/play video method
+@socketio.on('playVideo')
+def playVideo(data):
+    print(data)
+    emit('toggleVideo', {"state": data['state'], "time":data['time']}, broadcast=True, include_self=False, to=data['room'])
 
+@socketio.on('skipTo')
+def skipTo(data):
+    print(data)
+    emit('jumpTo', {"time":data["time"], "timeline":data["timelineValue"]}, broadcast=True, include_self=False, to=data['room'])
