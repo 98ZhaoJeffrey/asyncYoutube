@@ -1,13 +1,15 @@
 from .models import User, Room, db
+from .utils import validateVideo
 
 from flask import Flask, render_template, session, request, redirect
 from os import getenv
 from dotenv import load_dotenv, find_dotenv
 from flask_migrate import Migrate
 from flask_socketio import SocketIO, join_room, leave_room, emit
-import redis, requests, time
-load_dotenv(find_dotenv())
+import redis, fakeredis
 
+
+load_dotenv(find_dotenv())
 app = Flask(__name__)
 app.config['SECRET_KEY'] = getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = getenv('SQLALCHEMY_DATABASE_URI')
@@ -18,6 +20,7 @@ db.init_app(app)
 socketio = SocketIO(app)
 migrate = Migrate(app, db)
 
+fakeRedisClient = fakeredis.FakeStrictRedis(decode_responses=True)
 redisClient = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
 
 @app.route('/', methods=['GET', 'POST'])
@@ -26,8 +29,6 @@ def index():
 
         data = request.form
         if 'make' in data:
-            #create a room first, then make the user the host
-            start = time.time()
 
             room = Room()
             username = data['name']
@@ -39,27 +40,12 @@ def index():
             db.session.add(room)
             db.session.commit()
 
-            if len(link) > 43:
-                #remove the list parameter
-                link = link.split('&list')[0]
-
-            #get the video id
-            id = link.split("=")[1]
-
-            serverResponse = requests.get(f"http://img.youtube.com/vi/{id}/mqdefault.jpg")
-            print(time.time()-start)
-
-            try:
-                #throws error if response is not OK
-                serverResponse.raise_for_status()
-                           
-                #redisClient.lpush(room.code, link)
+            if validateVideo(link):
+                fakeRedisClient.lpush(room.code, link)
                 session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
-                return ({"success":"Room is sucessfully created. You will be redirected in a moment."}, 201)
-
-            except requests.exceptions.HTTPError:
-                print("video not found")
-                return ({"error":"This video does not exist"}, 404)
+                return ({"success":"Room is sucessfully created. You will be redirected in a moment."}, 201) 
+            else:
+                 ({"error":"This video does not exist"}, 404)
 
         #join a room
         elif 'join' in data:
@@ -104,7 +90,6 @@ def room():
     user = session.pop('user', None)
     if user:
         context = {'user': user}
-        #socketio.emit('my response', f'{user} has joined', broadcast=True)
         return render_template('room.html', context=context)
     return redirect('/')
 
@@ -138,11 +123,12 @@ def message(data):
 @socketio.on('addVideo')
 def queueVideo(data):
     print(data)
-    #use client.lpush(roomcode, link) to append a link
+    if validateVideo(data["link"]):
+        fakeRedisClient.lpush(data["room"], data["link"])
+        emit("addVideoResponse", {"state":"success"}, broadcast=True, include_self=False, to=data['room'])
+        print("Video successfully added to queue")
+    #use client.lpush to append a link
     #use client.rpop(roomcode) to get the next link in queue
-
-#next video method to run the next video(used when finish or skipped)
-
 
 #pause/play video method
 @socketio.on('playVideo')
@@ -150,7 +136,28 @@ def playVideo(data):
     print(data)
     emit('toggleVideo', {"state": data['state'], "time":data['time']}, broadcast=True, include_self=False, to=data['room'])
 
+#skip to x seconds of the video
 @socketio.on('skipTo')
 def skipTo(data):
     print(data)
     emit('jumpTo', {"time":data["time"], "timeline":data["timelineValue"]}, broadcast=True, include_self=False, to=data['room'])
+
+#next video method to run the next video(used when finish or skipped)
+
+@socketio.on('skipVideo')
+def skipVideo(data):
+    print(data)
+    roomcode = data['room']
+    room = Room.query.filter_by(code=roomcode).first()
+
+    if room.host == data['userId']:
+        
+        nextVideo = fakeRedisClient.rpop(room.code)
+        if nextVideo != None:
+            print(f"Video Skipped. Now Playing {nextVideo}")
+            emit('skipVideoResponse', {"state":"skipping", "video": nextVideo}, broadcast=True, include_self=False, to=data['room'])
+        else:
+            emit('skipVideoResponse', {"state":"failed"}, broadcast=True, include_self=False, to=data['room'])
+    else:
+        print("You are not the host of the room")
+        emit('skipVideoResponse', {"state":"failed"}, broadcast=True, include_self=False, to=data['room'])

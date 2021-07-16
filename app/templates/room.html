@@ -18,9 +18,7 @@
         <div class="flex flex-row justify-evenly">
           <!-- these controls are only for the host user-->
          
-          
-          <label for="volume" class="text-white text-2xl">Volume</label>
-          <input type="range" id="volume" name="volume" min="0" max="100" value="50">
+          <input type="range" id="volumeBar" name="volumeBar" min="0" max="100" value="50" onChange="adjustVolume()">
           
           <button class="rounded-lg bg-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="fullscreenButton">Full Screen</button>
         </div>
@@ -28,7 +26,7 @@
         <!--only displayed if you are host-->
         <div class="flex flex-row justify-evenly items-center">
           <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="playButton">Play</button>
-          <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800">Skip</button>
+          <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="skipButton">Skip</button>
           <input id="timeline" type="range" min=0 max=1000 value=0 onChange="scrubVideo()" class="w-5/6">
         </div>
 
@@ -56,6 +54,7 @@
 
 <p id="username" class="visibility: hidden">{{context.user.username}}</p>
 <p id="room" class="visibility: hidden">{{context.user.room}}</p>
+<p id="userId" class="visibility: hidden">{{context.user.id}}</p>
 
 <script defer type="text/javascript" src="{{ url_for('static', filename='js/roomSocketio.js') }}"></script>
 

@@ -7,6 +7,7 @@ if (!socket.connected){
 
 const username = document.getElementById('username').textContent
 const room = document.getElementById('room').textContent
+const userId = document.getElementById('userId').textContent
 
 const chat = document.getElementById('chat')
 
@@ -18,7 +19,9 @@ const videoButton = document.getElementById('videoButton')
 
 const playButton = document.getElementById("playButton")
 const fullscreenButton = document.getElementById("fullscreenButton")
+const skipButton = document.getElementById("skipButton")
 const timeline = document.getElementById("timeline")
+const volumeBar = document.getElementById("volumeBar")
 
  // 2. This code loads the IFrame Player API code asynchronously.
  var tag = document.createElement('script');
@@ -51,6 +54,7 @@ const timeline = document.getElementById("timeline")
  function onPlayerReady(event) {
     var player = event.target;
     iframe = document.getElementById("player")
+    player.setVolume(50)
     event.target.playVideo();
  }
  
@@ -68,7 +72,7 @@ const timeline = document.getElementById("timeline")
      player.stopVideo();
  }
 
-const appendMessage = (msg, isSender) => {
+const appendMessage = (msg, isSender)=>{
   const messageElement = document.createElement('div')
   if (isSender){
     messageElement.className = "rounded-lg bg-red-700 text-white max-w-sm py-2 px-4 mt-4 mr-3 self-end text-center"
@@ -103,7 +107,7 @@ socket.on("message", (msg)=>{
 })
 
 //add message on your screen
-messageButton.addEventListener('click', () => {
+messageButton.addEventListener('click', ()=>{
   var msg = messageInput.value
   if (msg){
     appendMessage(`${messageInput.value}`, true)
@@ -113,7 +117,7 @@ messageButton.addEventListener('click', () => {
   }
 })
 
-messageInput.addEventListener('keydown', (e) => {
+messageInput.addEventListener('keydown', (e)=>{
   const keyCode = e.which || e.key;
 
   if(keyCode === 13 && !e.shiftKey){
@@ -128,12 +132,16 @@ videoButton.addEventListener('click', ()=>{
     var link = videoInput.value
     if(link){
       console.log(link)
-      socket.emit('addVideo', {link:link, room: room})
+      socket.emit('addVideo', {link:link, room:room})
       videoInput.value = ''
     }
 })
 
-const playVideo = (state) => {
+socket.on("addVideoResponse", (data)=>{
+  console.log(data)
+})
+
+const playVideo = (state)=>{
   if(state === "Play"){
     player.pauseVideo()
   }
@@ -158,7 +166,7 @@ socket.on("toggleVideo", (data)=>{
 })
 
 //scrub timeline
-const scrubVideo = () => {
+const scrubVideo = ()=>{
      console.log(timeline.value)
      const timeToSkipTo = player.getDuration() * timeline.value/1000
      socket.emit('skipTo', {time: timeToSkipTo, timelineValue: timeline.value, room: room})
@@ -179,3 +187,23 @@ fullscreenButton.addEventListener('click', ()=>{
     requestFullScreen.bind(iframe)();
   }
 }) 
+
+//adjust volume client side only
+const adjustVolume = ()=>{
+  player.setVolume(volumeBar.value)
+  console.log(`Player's volume ${player.getVolume()}`)
+}
+
+//skip video
+skipButton.addEventListener('click', ()=>{
+  console.log("Skip request")
+  socket.emit('skipVideo', {room: room, userId: userId})
+})
+
+socket.on('skipVideoResponse', (data)=>{
+  console.log(`Where is my data ${data["video"]}`)
+  if(data["state"] === "skipping"){
+    player.loadVideoById(data["video"])
+    console.log(`Now playing ${data["video"]}`)
+  }
+})
