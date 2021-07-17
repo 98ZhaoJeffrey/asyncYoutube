@@ -58,16 +58,7 @@ const volumeBar = document.getElementById("volumeBar")
     event.target.playVideo();
  }
  
- // 5. The API calls this function when the player's state changes.
- //    The function indicates that when playing a video (state=1),
- //    the player should play for six seconds and then stop.
- var done = false;
- function onPlayerStateChange(event) {
-     if (event.data == YT.PlayerState.PLAYING && !done) {
-         setTimeout(stopVideo, 6000);
-         done = true;
-     }
- }
+
  function stopVideo() {
      player.stopVideo();
  }
@@ -117,6 +108,7 @@ messageButton.addEventListener('click', ()=>{
   }
 })
 
+//pressing enter submits form and shift + enter makes a new line
 messageInput.addEventListener('keydown', (e)=>{
   const keyCode = e.which || e.key;
 
@@ -125,7 +117,7 @@ messageInput.addEventListener('keydown', (e)=>{
     messageButton.click()
   }
 })
-//pressing enter submits form and shift + enter makes a new line
+
 
 //add video to queue
 videoButton.addEventListener('click', ()=>{
@@ -139,8 +131,10 @@ videoButton.addEventListener('click', ()=>{
 
 socket.on("addVideoResponse", (data)=>{
   console.log(data)
+  player.cueVideoById("B9AkNhPKAgA")
 })
 
+//play video helper function
 const playVideo = (state)=>{
   if(state === "Play"){
     player.pauseVideo()
@@ -201,9 +195,25 @@ skipButton.addEventListener('click', ()=>{
 })
 
 socket.on('skipVideoResponse', (data)=>{
-  console.log(`Where is my data ${data["video"]}`)
   if(data["state"] === "skipping"){
-    player.loadVideoById(data["video"])
+    player.cueVideoById(data["video"])
     console.log(`Now playing ${data["video"]}`)
   }
 })
+
+//handle queuing the next video when it ends
+function onPlayerStateChange(event) {
+     if (event.data == YT.PlayerState.ENDED) {
+        //cue the next video
+        socket.emit("videoEnded", {room: room})
+     }
+ }
+
+ socket.on('playNextVideo', (data)=>{
+   console.log(data)
+   if(data["state"] === "next"){
+     player.cueVideoById(data["video"])
+     playButton.innerhtml = "Play"
+     console.log(`Now playing ${data["video"]}`)
+   }
+ })

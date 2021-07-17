@@ -44,9 +44,9 @@ def index():
             if link:
                 fakeRedisClient.lpush(room.code, link)
                 session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
-                return ({"success":"Room is sucessfully created. You will be redirected in a moment."}, 201) 
+                return ({'success':'Room is sucessfully created. You will be redirected in a moment.'}, 201) 
             else:
-                 ({"error":"This video does not exist"}, 404)
+                 ({'error':'This video does not exist'}, 404)
 
         #join a room
         elif 'join' in data:
@@ -124,10 +124,11 @@ def message(data):
 @socketio.on('addVideo')
 def queueVideo(data):
     print(data)
-    if validateVideo(data["link"]):
-        fakeRedisClient.lpush(data["room"], data["link"])
-        emit("addVideoResponse", {"state":"success"}, broadcast=True, include_self=False, to=data['room'])
-        print("Video successfully added to queue")
+    video = validateVideo(data['link'])
+    if video:
+        fakeRedisClient.lpush(data['room'], video)
+        emit('addVideoResponse', {'state':'success'}, broadcast=True, include_self=False, to=data['room'])
+        print('Video successfully added to queue')
     #use client.lpush to append a link
     #use client.rpop(roomcode) to get the next link in queue
 
@@ -135,13 +136,13 @@ def queueVideo(data):
 @socketio.on('playVideo')
 def playVideo(data):
     print(data)
-    emit('toggleVideo', {"state": data['state'], "time":data['time']}, broadcast=True, include_self=False, to=data['room'])
+    emit('toggleVideo', {'state': data['state'], 'time':data['time']}, broadcast=True, include_self=False, to=data['room'])
 
 #skip to x seconds of the video
 @socketio.on('skipTo')
 def skipTo(data):
     print(data)
-    emit('jumpTo', {"time":data["time"], "timeline":data["timelineValue"]}, broadcast=True, include_self=False, to=data['room'])
+    emit('jumpTo', {'time':data['time'], 'timeline':data['timelineValue']}, broadcast=True, include_self=False, to=data['room'])
 
 #next video method to run the next video(used when finish or skipped)
 
@@ -152,13 +153,23 @@ def skipVideo(data):
     room = Room.query.filter_by(code=roomcode).first()
 
     if room.host == data['userId']:
-        
         nextVideo = fakeRedisClient.rpop(room.code)
         if nextVideo != None:
-            print(f"Video Skipped. Now Playing {nextVideo}")
-            emit('skipVideoResponse', {"state":"skipping", "video": nextVideo}, broadcast=True, to=data['room'])
+            print(f'Video Skipped. Now Playing {nextVideo}')
+            emit('skipVideoResponse', {'state':'skipping', 'video': nextVideo}, broadcast=True, to=data['room'])
         else:
-            emit('skipVideoResponse', {"state":"failed"}, broadcast=True, include_self=False, to=data['room'])
+            emit('skipVideoResponse', {'state':'failed'}, broadcast=True, include_self=False, to=data['room'])
     else:
-        print("You are not the host of the room")
-        emit('skipVideoResponse', {"state":"failed"}, broadcast=True, include_self=False, to=data['room'])
+        print('You are not the host of the room')
+        emit('skipVideoResponse', {'state':'failed'}, broadcast=True, include_self=False, to=data['room'])
+
+@socketio.on('videoEnded')
+def videoEnded(data):
+    print('Getting next video')
+    roomcode = data['room']
+    room = Room.query.filter_by(code=roomcode).first()
+    nextVideo = fakeRedisClient.rpop(room.code)
+    if nextVideo:
+        emit('playNextVideo', {'state': 'next', 'video': nextVideo}, broadcast=True, to=data['room'])
+    else:
+        emit('playNextVideo', {'state': 'no Video'}, broadcast=True, to=data['room'])
