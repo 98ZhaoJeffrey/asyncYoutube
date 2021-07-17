@@ -17,8 +17,8 @@ def validateVideo(link):
     try:
         #throws error if response is not OK
         serverResponse.raise_for_status()
-        print("video found")
-        return True
+        print(f"video found: {id}")
+        return id
 
     except requests.exceptions.HTTPError:
         print("video not found")

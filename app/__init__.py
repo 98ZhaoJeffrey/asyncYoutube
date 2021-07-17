@@ -40,7 +40,8 @@ def index():
             db.session.add(room)
             db.session.commit()
 
-            if validateVideo(link):
+            link = validateVideo(link)
+            if link:
                 fakeRedisClient.lpush(room.code, link)
                 session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
                 return ({"success":"Room is sucessfully created. You will be redirected in a moment."}, 201) 
@@ -155,7 +156,7 @@ def skipVideo(data):
         nextVideo = fakeRedisClient.rpop(room.code)
         if nextVideo != None:
             print(f"Video Skipped. Now Playing {nextVideo}")
-            emit('skipVideoResponse', {"state":"skipping", "video": nextVideo}, broadcast=True, include_self=False, to=data['room'])
+            emit('skipVideoResponse', {"state":"skipping", "video": nextVideo}, broadcast=True, to=data['room'])
         else:
             emit('skipVideoResponse', {"state":"failed"}, broadcast=True, include_self=False, to=data['room'])
     else:
