@@ -1,4 +1,4 @@
-from .models import User, Room, db
+from .models import User, Room, db, to_dict
 from .utils import validateVideo
 
 from flask import Flask, render_template, session, request, redirect
@@ -7,6 +7,7 @@ from dotenv import load_dotenv, find_dotenv
 from flask_migrate import Migrate
 from flask_socketio import SocketIO, join_room, leave_room, emit
 import redis, fakeredis
+from random import choice
 
 
 load_dotenv(find_dotenv())
@@ -21,19 +22,19 @@ socketio = SocketIO(app)
 migrate = Migrate(app, db)
 
 fakeRedisClient = fakeredis.FakeStrictRedis(decode_responses=True)
-redisClient = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+#redisClient = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-
         data = request.form
         if 'make' in data:
 
             room = Room()
             username = data['name']
             link = data['video']
-            user = User(name=username, room_code=room.code)
+            user = User(username=username, room_code=room.code)
             room.host = user.id
 
             db.session.add(user)
@@ -41,9 +42,9 @@ def index():
             db.session.commit()
 
             link = validateVideo(link)
-            if link:
+            if link != "None":
                 fakeRedisClient.lpush(room.code, link)
-                session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
+                session['user'] = {'username': user.username, 'room': room.code, 'id': user.id}
                 return ({'success':'Room is sucessfully created. You will be redirected in a moment.'}, 201) 
             else:
                  ({'error':'This video does not exist'}, 404)
@@ -52,14 +53,14 @@ def index():
         elif 'join' in data:
             #return json for fetch
             roomcode = data['code']
-            room = Room.query.filter_by(code=roomcode).first()
+            room = Room.query.get(roomcode)
             if room:
                 username = data['name']
-                user = User(name=username, room_code=roomcode)
+                user = User(username=username, room_code=roomcode)
 
                 db.session.add(user)
                 db.session.commit()
-                session['user'] = {'username': user.name, 'room': room.code, 'id': user.id}
+                session['user'] = {'username': user.username, 'room': roomcode, 'id': user.id}
                 
                 return ({'success':'You will be redirected to the room. Please wait a moment.'}, 200)
             else:
@@ -76,7 +77,8 @@ def join(roomcode):
         db.session.add(user)
         db.session.commit()
 
-        session['user'] = {'username': user.name, 'room': roomcode, 'id': user.id}
+        session['user'] = user
+        #{'username': user.name, 'room': roomcode, 'id': user.id}
         return {'success':'You will be redirected to the room. Please wait a moment.'}, 201
     room = Room.query.filter_by(code=roomcode).first()
     if room:
@@ -88,33 +90,46 @@ def join(roomcode):
 @app.route('/room')
 def room():
     # pop the user, then pass it in a context
-    user = session.pop('user', None)
+    user = session.get('user', None)
     if user:
         context = {'user': user}
         return render_template('room.html', context=context)
     return redirect('/')
 
-@app.route('/roomtest')
-def roomtest():
-    return render_template('room.html')
-
 @app.route('/about')
 def about():
     return render_template('about.html')
 
-@socketio.on('connectUser')
-def connect(data):
-    print(data)
-    room = data['room']
-    join_room(room)
-    emit('joinChat', data['username'], broadcast=True, include_self=False, to=room)
+@socketio.on('connect')
+def connect():
+    print('Client connected') 
+    user = session.get('user', None)
+    if user:
+        print(user)   
+        room = user['room']
+        join_room(room)
+        emit('joinChat', user['username'], broadcast=True, include_self=False, to=room)
 
-@socketio.on('disconnectUser')
-def disconnect(data):
-    print(f'Client disconnected {data}')
-    room = data['room']
-    leave_room(room)
-    emit('leaveChat', data['username'], broadcast=True, to=room)
+@socketio.on('disconnect')
+def disconnect():
+    user = session.pop('user', None)
+    if user:
+        print(f'{user["username"]} disconnected')
+        deletedUser = User.query.get(user["id"])
+        room = Room.query.get(user["room"])
+        db.session.delete(deletedUser)
+        if room and len(room.users):        
+            if user["id"] == room.host:
+                newHost = choice(room.users)
+                print(f"{newHost.username} is the new host of the room")
+                room.host = newHost.id
+                emit('leaveChat', {"userleft": user['username'], "newHost": newHost.username}, broadcast=True, to=user['room'])
+            emit('leaveChat', {"userleft": user['username']}, broadcast=True, to=user['room'])
+        else:
+            print("Room deleted")
+            db.session.delete(room)
+            fakeRedisClient.delete(user['room'])
+        db.session.commit()
 
 @socketio.on('sendMessage')
 def message(data):
@@ -125,7 +140,7 @@ def message(data):
 def queueVideo(data):
     print(data)
     video = validateVideo(data['link'])
-    if video:
+    if video != "None":
         fakeRedisClient.lpush(data['room'], video)
         emit('addVideoResponse', {'state':'success'}, broadcast=True, include_self=False, to=data['room'])
         print('Video successfully added to queue')

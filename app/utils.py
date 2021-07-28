@@ -1,7 +1,7 @@
 import requests, time
 
 
-def validateVideo(link):
+def validateVideo(link: str) -> str:
     if len(link) > 43:
         #remove the list parameter
         link = link.split('&list')[0]
@@ -22,4 +22,4 @@ def validateVideo(link):
 
     except requests.exceptions.HTTPError:
         print("video not found")
-        return False
+        return "None"

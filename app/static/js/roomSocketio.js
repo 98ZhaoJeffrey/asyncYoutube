@@ -1,9 +1,9 @@
 //socketio method go here
 var socket = io();
+
 if (!socket.connected){
   var socket = io.connect(window.location.origin);
 }
-
 
 const username = document.getElementById('username').textContent
 const room = document.getElementById('room').textContent
@@ -58,38 +58,26 @@ const volumeBar = document.getElementById("volumeBar")
     event.target.playVideo();
  }
  
-
  function stopVideo() {
      player.stopVideo();
  }
 
 const appendMessage = (msg, isSender)=>{
   const messageElement = document.createElement('div')
-  if (isSender){
-    messageElement.className = "rounded-lg bg-red-700 text-white max-w-sm py-2 px-4 mt-4 mr-3 self-end text-center"
-  }else{
-    messageElement.className = "rounded-lg bg-purple-600 text-white max-w-sm py-2 px-4 mt-4 ml-3 self-start text-center"
-  }
+  messageElement.className = `rounded-lg bg-${isSender ? 'red-700' : 'purple-600'} text-white max-w-sm py-2 px-4 mt-4 ${isSender ? 'mr-3 self-end' : 'ml-3 self-start'} text-center`
   messageElement.innerText = msg
   chat.append(messageElement)
 }
 
 socket.on("connect", ()=>{
   console.log(`${username} has connected`)
-  socket.emit('connectUser', {username: username, room: room})
   appendMessage(`${username}(You) are connected`, true)
 })
 
 socket.on("joinChat", (user)=>{
-  console.log(user + " has connected to room")
+  console.log(`${user} has connected to room`)
   appendMessage(`${user} has connected to the room`, false)  
 })
-
-socket.on("leaveChat", (user)=>{
-  console.log(user + " has left the room")
-  appendMessage(`${user} has disconnected from the room`)  
-})
-
 
 //send message to everyone else
 socket.on("message", (msg)=>{
@@ -111,13 +99,20 @@ messageButton.addEventListener('click', ()=>{
 //pressing enter submits form and shift + enter makes a new line
 messageInput.addEventListener('keydown', (e)=>{
   const keyCode = e.which || e.key;
-
   if(keyCode === 13 && !e.shiftKey){
     e.preventDefault()
     messageButton.click()
   }
 })
 
+socket.on("leaveChat", (data)=>{
+  console.log(`${data["userleft"]} has left the room`)
+  appendMessage(`${data["userleft"]} has disconnected from the room`)
+  if(data["newHost"] !== undefined){
+    console.log(`${data["newHost"]} is the host now`)  
+    appendMessage(`${data["newHost"]} is the host now`)
+  }
+})
 
 //add video to queue
 videoButton.addEventListener('click', ()=>{
@@ -136,7 +131,7 @@ socket.on("addVideoResponse", (data)=>{
 
 //play video helper function
 const playVideo = (state)=>{
-  if(state === "Play"){
+  if(state === "play"){
     player.pauseVideo()
   }
   else{
@@ -146,10 +141,10 @@ const playVideo = (state)=>{
 
 //emits play/pause command
 playButton.addEventListener('click', ()=>{
-  const state = player.getPlayerState() === 1 ? "Play" : "Pause"
+  const state = player.getPlayerState() === 1 ? "play" : "pause"
   socket.emit('playVideo', {state:state, room: room, time:player.getCurrentTime()})
   playVideo(state)
-  playButton.innerText = state
+  playButton.innerHTML = `<i class="bi bi-${state}-fill"></i>`
 })
 
 //play/pause video at x seconds
@@ -209,11 +204,12 @@ function onPlayerStateChange(event) {
      }
  }
 
- socket.on('playNextVideo', (data)=>{
+socket.on('playNextVideo', (data)=>{
    console.log(data)
    if(data["state"] === "next"){
      player.cueVideoById(data["video"])
-     playButton.innerhtml = "Play"
+     playButton.innerhtml = `<i class="bi bi-play-fill"></i>`
      console.log(`Now playing ${data["video"]}`)
    }
- })
+})
+

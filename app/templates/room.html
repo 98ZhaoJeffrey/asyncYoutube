@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 
+{%block head%}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+<script src="https://cdn.socket.io/3.1.3/socket.io.min.js"></script>
+{%endblock%}
 
 {% block content %}
 
@@ -8,28 +12,32 @@
   <div class="col-span-7">
       <div class="py-12">
         <input id="videoInput" type="text" placeholder="YouTube Video Link" name="video" class="rounded-lg focus:outline-none focus:ring focus:border-purple-800 w-4/6 h-12 p-3" required></input>
-        <button id="videoButton" class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/16 h-12 p-3 hover:bg-purple-800">
+        <button id="videoButton" class="rounded-lg bg-purple-600 text-white text-1xl focus:outline-none w-1/16 h-12 p-3 hover:bg-purple-800">
           Request a Video
         </button>
       </div>
       <div id="player"></div>
 
-      <div class="p-12" id="controls">
-        <div class="flex flex-row justify-evenly">
-          <!-- these controls are only for the host user-->
-         
-          <input type="range" id="volumeBar" name="volumeBar" min="0" max="100" value="50" onChange="adjustVolume()">
+      <div class="p-12" id="controls" class="items-center w-5/6">
+        <input id="timeline" type="range" min=0 max=1000 value=0 onChange="scrubVideo()" class="w-full">
+
+        <div class="flex flex-row justify-between items-center">
+          <div>
+            <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-2xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="playButton">
+              <i class="bi bi-play-fill"></i>
+            </button>
+            <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-2xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="skipButton">
+              <i class="bi bi-skip-end-fill"></i>
+            </button>
           
-          <button class="rounded-lg bg-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="fullscreenButton">Full Screen</button>
+            <input type="range" id="volumeBar" name="volumeBar" min="0" max="100" value="50" onChange="adjustVolume()">
+          </div>
+          
+          <button class="rounded-lg bg-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="fullscreenButton">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
         </div>
-
-        <!--only displayed if you are host-->
-        <div class="flex flex-row justify-evenly items-center">
-          <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="playButton">Play</button>
-          <button class="rounded-lg bg-transparent border-2 border-purple-600 text-white text-1xl px-5 focus:outline-none h-12 hover:bg-purple-800" id="skipButton">Skip</button>
-          <input id="timeline" type="range" min=0 max=1000 value=0 onChange="scrubVideo()" class="w-5/6">
-        </div>
-
+        <p class="text-white">{{context.user.room}}</p>
       </div>
     </div>     
 
@@ -47,6 +55,7 @@
               Send
             </button>
         </div>
+        
     </div>
 </div>
 
