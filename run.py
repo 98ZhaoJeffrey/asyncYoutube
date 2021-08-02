@@ -5,4 +5,4 @@ if __name__ == '__main__':
     app.debug = True
     app.env = 'development'
     app.testing = True
-    socketio.run(app)
+    socketio.run(app, port=8000, host='0.0.0.0')

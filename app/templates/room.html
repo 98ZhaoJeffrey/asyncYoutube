@@ -7,7 +7,8 @@
 
 {% block content %}
 
-
+<div id="alerts" class= "flex flex-col items-center">
+</div>
 <div class="h-full w-full grid grid-cols-10 grid-rows-1 gap-x-10 ">
   <div class="col-span-7">
       <div class="py-12">
@@ -37,7 +38,7 @@
             <i class="bi bi-arrows-fullscreen"></i>
           </button>
         </div>
-        <p class="text-white">{{context.user.room}}</p>
+        <p class="text-white">{{joinUrl}}</p>
       </div>
     </div>     
 

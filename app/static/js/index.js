@@ -1,50 +1,35 @@
-const ErrorClass = "z-10 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-const SuccessClass = "z-10 bg-green-100 border border-red-400 text-green-700 px-4 py-3 rounded relative"
+const alertDiv = document.getElementById("alerts")
 
+const addAlert = (msg)=>{
+    const alert = document.createElement('div')
+    const alertType = msg['status'] === 'Success' ? 'green' : 'red'
 
-const JoinForm = document.getElementById('JoinForm')
-JoinForm.addEventListener('submit', (e) => {
-    e.preventDefault()
-    let data = new FormData(document.getElementById('JoinForm'))
-    data.append('join','')
-    fetch(`${window.origin}/`, {
-        method: "POST",
-        body: data
-    })  
-    .then(response => {
-        if(response.status !== 200){
-            console.log(response.error)
-        }else{
-            window.location ='room'
-        }           
-    })
-    .catch(error => console.error(error));
-}) 
-
-const MakeForm = document.getElementById('MakeForm')
-MakeForm.addEventListener('submit', (e) => {
-    e.preventDefault()
-    let data = new FormData(document.getElementById('MakeForm'))
-    data.append('make','')
-    fetch(`${window.origin}/`, {
-        method: "POST",
-        body: data
-    })  
-    .then(response => {
-            if(response.status !== 201){
-                console.log(data.json()) 
-            }
-            else{
-                window.location ='room'
-            }
-        })
-    .catch(error => console.error(error));
-}) 
-
-const closeAlert = (event) => {
-    const alert = event.target.parentElement.parentElement
-    console.log(alert)
-    if(alert){
-        alert.remove()
-    }
+    alert.className = `z-10 bg-${alertType}-100 w-2/3 border border-${alertType}-400 text-${alertType}-700 px-4 py-3 rounded relative items-center`
+    alert.innerHTML = `<span class="closebtn" onclick="this.parentElement.remove();">&times;</span> <strong>${msg['status']}</strong> ${msg['message']}` 
+    alertDiv.prepend(alert)
 }
+
+const sendData = (event, form) =>{
+    event.preventDefault()
+    let data = new FormData(form)
+    data.append(form.id,'')
+
+    fetch(`${window.origin}/`, {
+        method: "POST",
+        body: data
+    })  
+    .then(response => {
+        return(response.json())
+    })
+    .then(data =>{
+        console.log(data)
+        addAlert(data)
+        if(data['status'] === 'Success'){
+            setTimeout(()=> window.location = '/room', 1500)
+        }
+        
+    })
+    .catch(error => console.log("error", error))
+
+}
+
