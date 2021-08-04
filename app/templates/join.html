@@ -2,19 +2,23 @@
 
 {% block content %}
 
+<div id="alerts">
+</div>
 
-<div class="h-1/2 rounded-lg p-8" id="Join">
-    <form id="join">
-        <div class="flex flex-row">
-            <input type="text" placeholder="Enter a name" name="name" class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></input>
-            
-            <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-1/3 h-16 hover:bg-purple-800">
-                Join room
-            </button>
+<div class="flex flex-col items-center justify-content md:flex-row">
+    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Youtube" class="h-3/4 w-3/4 lg:h-1/3 sm:w-1/3">
+
+    <form id="join" class="w-3/4 md:w-1/2" onsubmit="sendData(event, this)">
+        <div class="flex flex-col p-5 rounded-lg shadow space-y-6 border-2 border-purple-600 rounded-lg lg:p-10">
+          <h1 class="font-bold text-xl text-center text-white">Join A Room</h1>
+
+            <input type="text" placeholder="Enter a name" name="name" class="border-2 rounded px-3 py-2 w-full focus:outline-none focus:outline-none" required/>
+
+            <button class="rounded-lg bg-purple-600 text-white focus:outline-none w-full h-16 hover:bg-purple-800">Join Room</button>
         </div>
     </form>
 </div>
 
-<script type="text/javascript" src="{{ url_for('static', filename='js/join.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/index.js') }}" defer></script>
 
 {% endblock %}

@@ -5,6 +5,7 @@ from random import choice
 def index():
     if request.method == 'POST':
         data = request.form
+        print(data)
         if 'make' in data:
             room = Room()
             username = data['name']
@@ -47,13 +48,10 @@ def join(roomcode):
     if request.method == 'POST':
         data = request.form
         username = data['name']
-        user = User(name=username, room_code=roomcode)
-
+        user = User(username=username, room_code=roomcode)
         db.session.add(user)
         db.session.commit()
-
-        session['user'] = user
-        #{'username': user.name, 'room': roomcode, 'id': user.id}
+        session['user'] = {'username': user.username, 'room': roomcode, 'id': user.id}
         return {'status':'Success', 'message': 'You will be redirected to the room. Please wait a moment.'}, 201
     room = Room.query.filter_by(code=roomcode).first()
     if room:
@@ -118,8 +116,11 @@ def queueVideo(data):
     video = validateVideo(data['link'])
     if video != "None":
         fakeRedisClient.lpush(data['room'], video)
-        emit('addVideoResponse', {'state':'success'}, broadcast=True, include_self=False, to=data['room'])
+        emit('addVideoResponse', {'status':'Success', 'message': 'Video successfully added to queue'}, include_self=True, to=data['room'])
         print('Video successfully added to queue')
+    else:
+        emit('addVideoResponse', {'status':'Error', 'message': 'Video could not be added to queue'}, include_self=True, to=data['room'])
+
 
 #pause/play video method
 @socketio.on('playVideo')

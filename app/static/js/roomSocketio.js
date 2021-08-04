@@ -2,7 +2,7 @@
 var socket = io();
 
 if (!socket.connected){
-  var socket = io.connect(window.location.origin);
+  socket = io.connect(window.location.origin);
 }
 
 const username = document.getElementById('username').textContent
@@ -69,7 +69,7 @@ const appendMessage = (msg, isSender)=>{
   chat.append(messageElement)
 }
 
-socket.on("connect", ()=>{
+socket.once("connect", ()=>{
   console.log(`${username} has connected`)
   appendMessage(`${username}(You) are connected`, true)
 })
@@ -105,7 +105,7 @@ messageInput.addEventListener('keydown', (e)=>{
   }
 })
 
-socket.on("leaveChat", (data)=>{
+socket.once("leaveChat", (data)=>{
   console.log(`${data["userleft"]} has left the room`)
   appendMessage(`${data["userleft"]} has disconnected from the room`)
   if(data["newHost"] !== undefined){
@@ -126,7 +126,7 @@ videoButton.addEventListener('click', ()=>{
 
 socket.on("addVideoResponse", (data)=>{
   console.log(data)
-  player.cueVideoById("B9AkNhPKAgA")
+  addAlert(data)
 })
 
 //play video helper function
