@@ -35,8 +35,6 @@ const volumeBar = document.getElementById("volumeBar")
  var player, iframe;
  function onYouTubeIframeAPIReady() {
      player = new YT.Player('player', {
-             height: '456',
-             width: '768',
              videoId: 'xTczn5RUgnk',
              playerVars: {
                  'playsinline': 0,
