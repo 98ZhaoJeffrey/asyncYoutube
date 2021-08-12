@@ -4,12 +4,11 @@
 
 {% endblock %}
 
-
-
 {%block content %}
-<div id="alerts" class= "flex flex-col items-center">
-</div>
-<div class="h-screen grid grid-cols-1 md:grid-cols-2" >    
+
+
+{% include "alert.html" %}
+<div class="h-screen grid grid-cols-1 md:grid-cols-2">    
     <div class="flex flex-col justify-center items-center">
         <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Youtube" class="h-2/3 w-5/6 ">
 

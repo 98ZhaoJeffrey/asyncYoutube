@@ -5,10 +5,6 @@ if (!socket.connected){
   socket = io.connect(window.location.origin);
 }
 
-const username = document.getElementById('username').textContent
-const room = document.getElementById('room').textContent
-const userId = document.getElementById('userId').textContent
-
 const chat = document.getElementById('chat')
 
 const messageInput = document.getElementById('messageInput')
@@ -23,43 +19,6 @@ const skipButton = document.getElementById("skipButton")
 const timeline = document.getElementById("timeline")
 const volumeBar = document.getElementById("volumeBar")
 
- // 2. This code loads the IFrame Player API code asynchronously.
- var tag = document.createElement('script');
-
- tag.src = "https://www.youtube.com/iframe_api";
- var firstScriptTag = document.getElementsByTagName('script')[0];
- firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
- 
- // 3. This function creates an <iframe> (and YouTube player)
- //    after the API code downloads.
- var player, iframe;
- function onYouTubeIframeAPIReady() {
-     player = new YT.Player('player', {
-             videoId: 'xTczn5RUgnk',
-             playerVars: {
-                 'playsinline': 0,
-                 'controls':0,
-                 'disablekb':1
-             },
-             events: {
-             'onReady': onPlayerReady,
-             'onStateChange': onPlayerStateChange
-             }
-         });
- }
- 
- // 4. The API will call this function when the video player is ready.
- function onPlayerReady(event) {
-    var player = event.target;
-    iframe = document.getElementById("player")
-    player.setVolume(50)
-    event.target.playVideo();
- }
- 
- function stopVideo() {
-     player.stopVideo();
- }
-
 const appendMessage = (msg, isSender)=>{
   const messageElement = document.createElement('div')
   messageElement.className = `rounded-lg bg-${isSender ? 'red-700' : 'purple-600'} text-white max-w-sm py-2 px-4 mt-4 ${isSender ? 'mr-3 self-end' : 'ml-3 self-start'} text-center`
@@ -70,6 +29,7 @@ const appendMessage = (msg, isSender)=>{
 socket.once("connect", ()=>{
   console.log(`${username} has connected`)
   appendMessage(`${username}(You) are connected`, true)
+  //get the video that is currently playing and the time
 })
 
 socket.on("joinChat", (user)=>{
@@ -81,6 +41,52 @@ socket.on("joinChat", (user)=>{
 socket.on("message", (msg)=>{
   console.log(msg)
   appendMessage(`${msg}`, false)
+})
+
+socket.once("leaveChat", (data)=>{
+  console.log(`${data["userleft"]} has left the room`)
+  appendMessage(`${data["userleft"]} has disconnected from the room`)
+  if(data["newHost"] !== undefined){
+    console.log(`${data["newHost"]} is the host now`)  
+    appendMessage(`${data["newHost"]} is the host now`)
+  }
+})
+
+socket.on("addVideoResponse", (data)=>{
+  console.log(data)
+  addAlert(data)
+})
+
+//play/pause video at x seconds
+socket.on("toggleVideo", (data)=>{
+  console.log("Video should be playing")
+  player.seekTo(data["time"], true)
+  playVideo(data["state"])
+  playButton.innerHTML = `<i class="bi bi-${data["state"]}-fill"></i>`
+})
+
+socket.on("jumpTo", (data)=>{
+  player.seekTo(data["time"], true)
+  timeline.value = data["timelineValue"]
+  console.log(timeline.value)
+})
+
+socket.on('skipVideoResponse', (data)=>{
+  if(data["status"] === "Success"){
+    player.cueVideoById(data["video"])
+    console.log(`Now playing ${data["video"]}`)
+  }
+  addAlert(data)
+})
+
+socket.on('playNextVideo', (data)=>{
+   console.log(data)
+   if(data["status"] === "Success"){
+     player.cueVideoById(data["video"])
+     playButton.innerhtml = `<i class="bi bi-play-fill"></i>`
+     console.log(`Now playing ${data["video"]}`)
+   }
+   addAlert(data)
 })
 
 //add message on your screen
@@ -103,15 +109,6 @@ messageInput.addEventListener('keydown', (e)=>{
   }
 })
 
-socket.once("leaveChat", (data)=>{
-  console.log(`${data["userleft"]} has left the room`)
-  appendMessage(`${data["userleft"]} has disconnected from the room`)
-  if(data["newHost"] !== undefined){
-    console.log(`${data["newHost"]} is the host now`)  
-    appendMessage(`${data["newHost"]} is the host now`)
-  }
-})
-
 //add video to queue
 videoButton.addEventListener('click', ()=>{
     var link = videoInput.value
@@ -122,49 +119,19 @@ videoButton.addEventListener('click', ()=>{
     }
 })
 
-socket.on("addVideoResponse", (data)=>{
-  console.log(data)
-  addAlert(data)
-})
-
-//play video helper function
-const playVideo = (state)=>{
-  if(state === "play"){
-    player.pauseVideo()
-  }
-  else{
-    player.playVideo()    
-  }
-}
-
 //emits play/pause command
 playButton.addEventListener('click', ()=>{
   const state = player.getPlayerState() === 1 ? "play" : "pause"
-  socket.emit('playVideo', {state:state, room: room, time:player.getCurrentTime()})
-  playVideo(state)
-  playButton.innerHTML = `<i class="bi bi-${state}-fill"></i>`
-})
-
-//play/pause video at x seconds
-socket.on("toggleVideo", (data)=>{
-  console.log("Video should be playing")
-  player.seekTo(data["time"], true)
-  playVideo(data["state"])
+  socket.emit('playVideo', {state:state, room: room, userId: userId, time:player.getCurrentTime()})
 })
 
 //scrub timeline
 const scrubVideo = ()=>{
      console.log(timeline.value)
      const timeToSkipTo = player.getDuration() * timeline.value/1000
-     socket.emit('skipTo', {time: timeToSkipTo, timelineValue: timeline.value, room: room})
+     socket.emit('skipTo', {time: timeToSkipTo, timelineValue: timeline.value, room: room, userId: userId})
      player.seekTo(timeToSkipTo, true)
  }
-
-socket.on("jumpTo", (data)=>{
-  player.seekTo(data["time"], true)
-  timeline.value = data["timelineValue"]
-  console.log(timeline.value)
-})
 
 //full screen
 fullscreenButton.addEventListener('click', ()=>{
@@ -187,41 +154,12 @@ skipButton.addEventListener('click', ()=>{
   socket.emit('skipVideo', {room: room, userId: userId})
 })
 
-socket.on('skipVideoResponse', (data)=>{
-  if(data["state"] === "skipping"){
-    player.cueVideoById(data["video"])
-    console.log(`Now playing ${data["video"]}`)
-  }
-})
-
-//handle queuing the next video when it ends
-function onPlayerStateChange(event) {
-     if (event.data == YT.PlayerState.ENDED) {
-        //cue the next video
-        socket.emit("videoEnded", {room: room})
-     }
- }
-
-socket.on('playNextVideo', (data)=>{
-   console.log(data)
-   if(data["state"] === "next"){
-     player.cueVideoById(data["video"])
-     playButton.innerhtml = `<i class="bi bi-play-fill"></i>`
-     console.log(`Now playing ${data["video"]}`)
-   }
-})
-
-function copyLink() {
+const copyLink = ()=>{
   /* Get the text field */
   var copyText = document.getElementById("invite");
-
   /* Select the text field */
   copyText.select();
   copyText.setSelectionRange(0, 99999); /* For mobile devices */
-
   /* Copy the text inside the text field */
   document.execCommand("copy");
-
-  /* Alert the copied text */
-  alert("Copied the text: " + copyText.value);
 } 

@@ -1,11 +1,10 @@
-from app import app, render_template, session, request, redirect, User, Room, db, to_dict, validateVideo, fakeRedisClient, socketio, join_room, leave_room, emit
+from app import app, render_template, session, request, redirect, User, Room, db, to_dict, validate_video, videoQueue, socketio, join_room, leave_room, emit
 from random import choice
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         data = request.form
-        print(data)
         if 'make' in data:
             room = Room()
             username = data['name']
@@ -17,11 +16,11 @@ def index():
             db.session.add(room)
             db.session.commit()
 
-            link = validateVideo(link)
-            if link != "None":
-                fakeRedisClient.lpush(room.code, link)
+            link = validate_video(link)
+            if link:
+                videoQueue.queue_video(room.code, link)
                 session['user'] = {'username': user.username, 'room': room.code, 'id': user.id}
-                return ({'status':'Success', 'message': 'Room is sucessfully created. You will be redirected in a moment.'}, 201) 
+                return ({'status':'Success', 'message': 'Room is sucessfully created. You will be redirected in a moment.', 'video': link}, 201) 
             else:
                 return ({'status':'Error', 'message': 'This video does not exist'}, 404)
 
@@ -33,11 +32,9 @@ def index():
             if room:
                 username = data['name']
                 user = User(username=username, room_code=roomcode)
-
                 db.session.add(user)
                 db.session.commit()
                 session['user'] = {'username': user.username, 'room': roomcode, 'id': user.id}
-                
                 return ({'status':'Success', 'message': 'You will be redirected to the room. Please wait a moment.'}, 200)
             else:
                 return ({'status':'Error', 'message': 'The room with the code you provided does not exist. Check if it is correct.'}, 404)
@@ -58,16 +55,19 @@ def join(roomcode):
         #page to pick username
         return render_template('join.html')
     #page to show error
-    return render_template('error.html')
+    return redirect('/')
 
 @app.route('/room')
 def room():
     # pop the user, then pass it in a context
     user = session.get('user', None)
     if user:
-        context = {'user': user}
-        joinUrl = f'{request.url_root}join/{user["room"]}'
-        return render_template('room.html', context=context, joinUrl=joinUrl)
+        join_url = f'{request.url_root}join/{user["room"]}'
+        #peak the first video to load onto the iframe
+        video = videoQueue.get_current_video(user['room'])
+        print(video)
+        data = {'user': user, 'join_url': join_url, 'video': video}
+        return render_template('room.html', data=data)
     return redirect('/')
 
 @app.route('/about')
@@ -76,33 +76,35 @@ def about():
 
 @socketio.on('connect')
 def connect():
-    print('Client connected') 
     user = session.get('user', None)
     if user:
-        print(user)   
+        print(user, 'connected')   
         room = user['room']
         join_room(room)
-        emit('joinChat', user['username'], broadcast=True, include_self=False, to=room)
+        data = user['username']
+        emit('joinChat', data, broadcast=True, include_self=False, to=room)
 
 @socketio.on('disconnect')
 def disconnect():
     user = session.pop('user', None)
     if user:
         print(f'{user["username"]} disconnected')
-        deletedUser = User.query.get(user["id"])
+        deleted_user = User.query.get(user['id'])
         room = Room.query.get(user["room"])
-        db.session.delete(deletedUser)
+        db.session.delete(deleted_user)
         if room and len(room.users):        
-            if user["id"] == room.host:
-                newHost = choice(room.users)
-                print(f"{newHost.username} is the new host of the room")
-                room.host = newHost.id
-                emit('leaveChat', {"userleft": user['username'], "newHost": newHost.username}, broadcast=True, to=user['room'])
-            emit('leaveChat', {"userleft": user['username']}, broadcast=True, to=user['room'])
+            if user['id'] == room.host:
+                new_host = choice(room.users)
+                print(f'{new_host.username} is the new host of the room')
+                room.host = new_host.id
+                data = {'userleft': user['username'], 'newHost': new_host.username}
+                emit('leaveChat', data, broadcast=True, to=user['room'])
+            data = {'userleft': user['username']}
+            emit('leaveChat', data, broadcast=True, to=user['room'])
         else:
-            print("Room deleted")
+            print('Room deleted')
             db.session.delete(room)
-            fakeRedisClient.delete(user['room'])
+            videoQueue.delete_room(user['room'])
         db.session.commit()
 
 @socketio.on('sendMessage')
@@ -113,53 +115,67 @@ def message(data):
 @socketio.on('addVideo')
 def queueVideo(data):
     print(data)
-    video = validateVideo(data['link'])
-    if video != "None":
-        fakeRedisClient.lpush(data['room'], video)
-        emit('addVideoResponse', {'status':'Success', 'message': 'Video successfully added to queue'}, include_self=True, to=data['room'])
+    room = data['room']
+    video = validate_video(data['link'])
+    if video:
+        videoQueue.queue_video(room, video)
+        data = {'status':'Success', 'message': 'Video successfully added to queue'}
+        emit('addVideoResponse', data, include_self=True, to=request.sid)
         print('Video successfully added to queue')
     else:
-        emit('addVideoResponse', {'status':'Error', 'message': 'Video could not be added to queue'}, include_self=True, to=data['room'])
-
+        data = {'status':'Error', 'message': 'Video could not be added to queue'}
+        emit('addVideoResponse', data, include_self=True, to=request.sid)
+        print('Failed to push to queue')
 
 #pause/play video method
 @socketio.on('playVideo')
 def playVideo(data):
     print(data)
-    emit('toggleVideo', {'state': data['state'], 'time':data['time']}, broadcast=True, include_self=False, to=data['room'])
+    code = data['room']
+    room = Room.query.filter_by(code=code).first()
+    if room.host == data['userId']:
+        data = {'state': data['state'], 'time':data['time']}
+        emit('toggleVideo', data, broadcast=True, include_self=True, to=code)
 
 #skip to x seconds of the video
 @socketio.on('skipTo')
 def skipTo(data):
     print(data)
-    emit('jumpTo', {'time':data['time'], 'timeline':data['timelineValue']}, broadcast=True, include_self=False, to=data['room'])
+    code = data['room']
+    room = Room.query.filter_by(code=code).first()
+    if room.host == data['userId']:
+        data = {'time':data['time'], 'timeline':data['timelineValue']}
+        emit('jumpTo', data, broadcast=True, include_self=False, to=code)
 
 #next video method to run the next video(used when finish or skipped)
-
 @socketio.on('skipVideo')
 def skipVideo(data):
     print(data)
-    roomcode = data['room']
-    room = Room.query.filter_by(code=roomcode).first()
-
+    code = data['room']
+    room = Room.query.filter_by(code=code).first()
     if room.host == data['userId']:
-        nextVideo = fakeRedisClient.rpop(room.code)
-        if nextVideo != None:
-            print(f'Video Skipped. Now Playing {nextVideo}')
-            emit('skipVideoResponse', {'state':'skipping', 'video': nextVideo}, broadcast=True, to=data['room'])
+        next_video = videoQueue.get_next_video(room.code)
+        if next_video:
+            print(f'Video Skipped. Now Playing {next_video}')
+            data = {'status':'Success', 'video': next_video, 'message': 'Video successfully skipped'}
+            emit('skipVideoResponse', data, broadcast=True, include_self=True, to=code)
         else:
-            emit('skipVideoResponse', {'state':'failed'}, broadcast=True, include_self=False, to=data['room'])
+            data = {'status':'Error', 'message': 'There is no video to queue next'}
+            emit('skipVideoResponse', data, include_self=True, to=request.sid)
     else:
         print('You are not the host of the room')
-        emit('skipVideoResponse', {'state':'failed'}, broadcast=True, include_self=False, to=data['room'])
+        data = {'status':'Error', 'message': "You are not the room's host"}
+        emit('skipVideoResponse', data, include_self=True, to=request.sid)
 
 @socketio.on('videoEnded')
 def videoEnded(data):
     print('Getting next video')
-    roomcode = data['room']
-    room = Room.query.filter_by(code=roomcode).first()
-    nextVideo = fakeRedisClient.rpop(room.code)
-    if nextVideo:
-        emit('playNextVideo', {'state': 'next', 'video': nextVideo}, broadcast=True, to=data['room'])
+    code = data['room']
+    room = Room.query.filter_by(code=code).first()
+    next_video = videoQueue.get_next_video(code)
+    if next_video:
+        data = {'status': 'Success', 'video': next_video, 'message': 'playing next video'}
+        emit('playNextVideo', data, broadcast=True, to=code)
     else:
-        emit('playNextVideo', {'state': 'no Video'}, broadcast=True, to=data['room'])
+        data = {'status': 'Error', 'message':'The queue is empty'}
+        emit('playNextVideo', data, broadcast=True, to=code)
