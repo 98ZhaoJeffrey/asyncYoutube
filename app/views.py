@@ -1,4 +1,4 @@
-from app import app, render_template, session, request, redirect, User, Room, db, to_dict, validate_video, videoQueue, socketio, join_room, leave_room, emit
+from app import app, render_template, session, request, redirect, User, Room, db, to_dict, validate_video, videoQueue, socketio, join_room, leave_room, emit, user_to_sid
 from random import choice
 
 @app.route('/', methods=['GET', 'POST'])
@@ -78,34 +78,53 @@ def about():
 def connect():
     user = session.get('user', None)
     if user:
-        print(user, 'connected')   
-        room = user['room']
-        join_room(room)
-        data = user['username']
+        print(user, 'connected')  
+        roomcode = user['room']
+        join_room(roomcode)
+        user_to_sid[user['id']] = request.sid
+        room = Room.query.filter_by(code=roomcode).first() 
+        data = user['username']        
+        if room.host == user['id']:
+            videoQueue.set_host(roomcode, request.sid)
         emit('joinChat', data, broadcast=True, include_self=False, to=room)
 
 @socketio.on('disconnect')
 def disconnect():
     user = session.pop('user', None)
     if user:
+        roomcode = user['room']
         print(f'{user["username"]} disconnected')
         deleted_user = User.query.get(user['id'])
-        room = Room.query.get(user["room"])
+        room = Room.query.get(roomcode)
+
         db.session.delete(deleted_user)
+        user_to_sid.pop(user['id'])
+
         if room and len(room.users):        
             if user['id'] == room.host:
                 new_host = choice(room.users)
                 print(f'{new_host.username} is the new host of the room')
+
                 room.host = new_host.id
+                videoQueue.set_host(roomcode, user_to_sid[new_host.id])
+
                 data = {'userleft': user['username'], 'newHost': new_host.username}
-                emit('leaveChat', data, broadcast=True, to=user['room'])
+                emit('leaveChat', data, broadcast=True, to=roomcode)
             data = {'userleft': user['username']}
-            emit('leaveChat', data, broadcast=True, to=user['room'])
+            emit('leaveChat', data, broadcast=True, to=roomcode)
         else:
             print('Room deleted')
             db.session.delete(room)
             videoQueue.delete_room(user['room'])
         db.session.commit()
+
+@socketio.on('syncVideo')
+def syncVideo(data):
+
+    roomcode = data['roomcode']
+    host = videoQueue.get_host(roomcode)
+    data = data['userId']
+    emit('getVideoProgress', data, to=host)
 
 @socketio.on('sendMessage')
 def message(data):
@@ -141,11 +160,17 @@ def playVideo(data):
 @socketio.on('skipTo')
 def skipTo(data):
     print(data)
-    code = data['room']
-    room = Room.query.filter_by(code=code).first()
-    if room.host == data['userId']:
+    code = data.get('room', None)
+    if code:
+        room = Room.query.filter_by(code=code).first()
+        if room.host == data['userId']:
+            data = {'time':data['time'], 'timeline':data['timelineValue']}
+            emit('jumpTo', data, broadcast=True, include_self=False, to=code)
+    else:
+        sid = user_to_sid[data['userId']]
         data = {'time':data['time'], 'timeline':data['timelineValue']}
-        emit('jumpTo', data, broadcast=True, include_self=False, to=code)
+        print(data)
+        emit('jumpTo', data, to=sid)
 
 #next video method to run the next video(used when finish or skipped)
 @socketio.on('skipVideo')

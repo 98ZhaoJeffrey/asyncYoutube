@@ -33,7 +33,7 @@ class VideoQueue():
         try:
             return json.loads(self.redis_client.get(key))
         except TypeError:
-            return {'current': '', 'queue': []}
+            return {'current': '', 'queue': [], 'host_sid': ''}
     
     def _set_obj(self, key: str, obj: object) -> bool:
         '''
@@ -70,12 +70,23 @@ class VideoQueue():
             return ''
 
     def queue_video(self, key: str, video: str) -> bool:
+        '''
+        Add video to the queue
+        '''
         room_obj = self._get_obj(key)
         #if it is the first video of the queue, dont add to queue since getting the next video will return the same video as the current video
         if room_obj['current']:
             room_obj['queue'].append(video)
         else:
             room_obj['current'] = video
+        return self._set_obj(key, room_obj)
+
+    def get_host(self, key: str) -> str:
+        return self._get_obj(key)['host_sid']
+
+    def set_host(self, key: str, sid: str) -> bool:
+        room_obj = self._get_obj(key)
+        room_obj['host_sid'] = sid
         return self._set_obj(key, room_obj)
     
     def delete_room(self, key: str) -> bool:

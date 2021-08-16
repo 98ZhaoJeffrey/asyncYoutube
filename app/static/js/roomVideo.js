@@ -15,7 +15,7 @@ function onYouTubeIframeAPIReady(){
                 'playsinline': 0,
                 'controls':0,
                 'disablekb':1,
-                'autoplay': 1
+                'autoplay': 0,
             },
             events: {
             'onReady': onPlayerReady,
@@ -38,6 +38,7 @@ function onPlayerReady(event){
    iframe = document.getElementById("player")
    player.setVolume(50)
    event.target.playVideo();
+   socket.emit("syncVideo", {userId: userId, roomcode: room})
 }
 
 //play video helper function

@@ -52,6 +52,13 @@ socket.once("leaveChat", (data)=>{
   }
 })
 
+//sync the user to the video
+socket.on("getVideoProgress", (data)=>{
+  const timeToSkipTo = player.getDuration() * timeline.value/1000
+  socket.emit('skipTo', {time: timeToSkipTo, timelineValue: timeline.value, userId: data})
+  player.seekTo(timeToSkipTo, true)
+})
+
 socket.on("addVideoResponse", (data)=>{
   console.log(data)
   addAlert(data)
@@ -66,6 +73,7 @@ socket.on("toggleVideo", (data)=>{
 })
 
 socket.on("jumpTo", (data)=>{
+  console.log(player)
   player.seekTo(data["time"], true)
   timeline.value = data["timelineValue"]
   console.log(timeline.value)
@@ -131,7 +139,7 @@ const scrubVideo = ()=>{
      const timeToSkipTo = player.getDuration() * timeline.value/1000
      socket.emit('skipTo', {time: timeToSkipTo, timelineValue: timeline.value, room: room, userId: userId})
      player.seekTo(timeToSkipTo, true)
- }
+}
 
 //full screen
 fullscreenButton.addEventListener('click', ()=>{

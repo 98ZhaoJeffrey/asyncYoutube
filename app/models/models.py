@@ -23,7 +23,7 @@ class Room(db.Model):
     #Get every user that is in the room for users, but only 1 person can be the host of the room
     users = db.relationship('User', backref='room')
     host = db.Column(db.String(64))
-
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.code = str(uuid.uuid4())

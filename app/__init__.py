@@ -24,4 +24,7 @@ migrate = Migrate(app, db)
 videoQueue = VideoQueue(fakeredis.FakeStrictRedis(decode_responses=True))
 #redisClient = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
 
+#hashmap to convert users to their socketio requests id
+user_to_sid = {}
+
 from app import views
