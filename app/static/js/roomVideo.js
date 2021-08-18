@@ -24,6 +24,12 @@ function onYouTubeIframeAPIReady(){
         });
 }
 
+const updateTimeline = ()=>{
+    setInterval(()=>{
+        timeline.value = 1000*player.getCurrentTime()/player.getDuration()
+    }, 200)
+}
+
 //handle queuing the next video when it ends
 function onPlayerStateChange(event){
     if (event.data == YT.PlayerState.ENDED) {
@@ -38,6 +44,7 @@ function onPlayerReady(event){
    iframe = document.getElementById("player")
    player.setVolume(50)
    event.target.playVideo();
+   updateTimeline()
    socket.emit("syncVideo", {userId: userId, roomcode: room})
 }
 
@@ -54,4 +61,5 @@ const playVideo = (state)=>{
 const stopVideo = ()=>{
     player.stopVideo();
 }
+
 

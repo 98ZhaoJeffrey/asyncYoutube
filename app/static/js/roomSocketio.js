@@ -27,27 +27,22 @@ const appendMessage = (msg, isSender)=>{
 }
 
 socket.once("connect", ()=>{
-  console.log(`${username} has connected`)
   appendMessage(`${username}(You) are connected`, true)
   //get the video that is currently playing and the time
 })
 
 socket.on("joinChat", (user)=>{
-  console.log(`${user} has connected to room`)
   appendMessage(`${user} has connected to the room`, false)  
 })
 
 //send message to everyone else
 socket.on("message", (msg)=>{
-  console.log(msg)
   appendMessage(`${msg}`, false)
 })
 
 socket.once("leaveChat", (data)=>{
-  console.log(`${data["userleft"]} has left the room`)
   appendMessage(`${data["userleft"]} has disconnected from the room`)
   if(data["newHost"] !== undefined){
-    console.log(`${data["newHost"]} is the host now`)  
     appendMessage(`${data["newHost"]} is the host now`)
   }
 })
@@ -60,39 +55,32 @@ socket.on("getVideoProgress", (data)=>{
 })
 
 socket.on("addVideoResponse", (data)=>{
-  console.log(data)
   addAlert(data)
 })
 
 //play/pause video at x seconds
 socket.on("toggleVideo", (data)=>{
-  console.log("Video should be playing")
   player.seekTo(data["time"], true)
   playVideo(data["state"])
   playButton.innerHTML = `<i class="bi bi-${data["state"]}-fill"></i>`
 })
 
 socket.on("jumpTo", (data)=>{
-  console.log(player)
   player.seekTo(data["time"], true)
   timeline.value = data["timelineValue"]
-  console.log(timeline.value)
 })
 
 socket.on('skipVideoResponse', (data)=>{
   if(data["status"] === "Success"){
     player.cueVideoById(data["video"])
-    console.log(`Now playing ${data["video"]}`)
   }
   addAlert(data)
 })
 
 socket.on('playNextVideo', (data)=>{
-   console.log(data)
    if(data["status"] === "Success"){
      player.cueVideoById(data["video"])
      playButton.innerhtml = `<i class="bi bi-play-fill"></i>`
-     console.log(`Now playing ${data["video"]}`)
    }
    addAlert(data)
 })
@@ -121,7 +109,6 @@ messageInput.addEventListener('keydown', (e)=>{
 videoButton.addEventListener('click', ()=>{
     var link = videoInput.value
     if(link){
-      console.log(link)
       socket.emit('addVideo', {link:link, room:room})
       videoInput.value = ''
     }
@@ -135,7 +122,6 @@ playButton.addEventListener('click', ()=>{
 
 //scrub timeline
 const scrubVideo = ()=>{
-     console.log(timeline.value)
      const timeToSkipTo = player.getDuration() * timeline.value/1000
      socket.emit('skipTo', {time: timeToSkipTo, timelineValue: timeline.value, room: room, userId: userId})
      player.seekTo(timeToSkipTo, true)
@@ -143,7 +129,6 @@ const scrubVideo = ()=>{
 
 //full screen
 fullscreenButton.addEventListener('click', ()=>{
-  console.log("fullscreen")
   var requestFullScreen = iframe.requestFullscreen || iframe.mozRequestFullScreen || iframe.webkitRequestFullScreen;
   if (requestFullScreen) {
     requestFullScreen.bind(iframe)();
@@ -153,18 +138,16 @@ fullscreenButton.addEventListener('click', ()=>{
 //adjust volume client side only
 const adjustVolume = ()=>{
   player.setVolume(volumeBar.value)
-  console.log(`Player's volume ${player.getVolume()}`)
 }
 
 //skip video
 skipButton.addEventListener('click', ()=>{
-  console.log("Skip request")
   socket.emit('skipVideo', {room: room, userId: userId})
 })
 
 const copyLink = ()=>{
   /* Get the text field */
-  var copyText = document.getElementById("invite");
+  let copyText = document.getElementById("invite");
   /* Select the text field */
   copyText.select();
   copyText.setSelectionRange(0, 99999); /* For mobile devices */
