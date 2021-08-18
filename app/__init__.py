@@ -7,13 +7,19 @@ from flask_socketio import SocketIO, join_room, leave_room, emit
 import redis
 import fakeredis
 
-from os import getenv
+from os import getenv, urandom
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
 app = Flask(__name__)
-app.config['SECRET_KEY'] = getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = getenv('SQLALCHEMY_DATABASE_URI')
+app.config['SECRET_KEY'] = urandom(24)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://{}:{}@{}/{}'.format(
+    getenv('MYSQL_USER'),
+    getenv('MYSQL_PASSWORD'),
+    getenv('MYSQL_HOST'),
+    getenv('MYSQL_DATABASE')
+)
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 db.app = app
@@ -21,8 +27,8 @@ db.init_app(app)
 socketio = SocketIO(app)
 migrate = Migrate(app, db)
 
-videoQueue = VideoQueue(fakeredis.FakeStrictRedis(decode_responses=True))
-#redisClient = redis.Redis(host='127.0.0.1', port=6379, decode_responses=True)
+videoQueue = VideoQueue(redis_client=redis.Redis(host=getenv('REDIS_HOST', "127.0.0.1"), port=6379, decode_responses=True))
+#fakeredis.FakeStrictRedis(decode_responses=True)
 
 #hashmap to convert users to their socketio requests id
 user_to_sid = {}
