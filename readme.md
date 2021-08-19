@@ -19,8 +19,7 @@ User controls: Adjust volume and size of the video
 ## Installation/Setup
 
 Pull the repo to your computer
-
-###Docker
+Docker
 
 You will need to provide your own .env file containing the variables found inside the docker-compose file under environment
 
@@ -30,7 +29,7 @@ docker-compose up --build
 ```
 and the website should be availiable on localhost:5000
 
-###Python
+Python
 
 You need a redis and MySQL server and edit the 'SQLALCHEMY_DATABASE_URI' inside __init__.py for your local server
 
