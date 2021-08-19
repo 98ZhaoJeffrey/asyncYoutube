@@ -18,5 +18,37 @@ User controls: Adjust volume and size of the video
 
 ## Installation/Setup
 
-TBD
+Pull the repo to your computer
+
+###Docker
+
+You will need to provide your own .env file containing the variables found inside the docker-compose file under environment
+
+Run 
+```bash
+docker-compose up --build
+```
+and the website should be availiable on localhost:5000
+
+###Python
+
+You need a redis and MySQL server and edit the 'SQLALCHEMY_DATABASE_URI' inside __init__.py for your local server
+
+Create a new virtual enviroment by running
+```python
+python3 -m venv [yourVenvName]
+[yourVenvName]\Scripts\activate.bat
+```
+Install the required packages 
+```python
+pip install -r requirements.txt
+```
+Set the Flask environment variable with
+```bash
+FLASK_APP=run.py
+```
+Run the website with 
+```bash
+flask run
+```
 
