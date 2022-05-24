@@ -1,1 +1,1 @@
-from .models import Room, User, db, to_dict
+from .models import Room, User, Topic, db, to_dict
