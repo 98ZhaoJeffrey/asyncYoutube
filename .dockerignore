@@ -1,0 +1,6 @@
+vscode/
+__pycache__/
+youtube/
+readme.md
+test.py
+migrations/
